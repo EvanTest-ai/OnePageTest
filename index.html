@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>銷貨管理系統</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ── 載入遮罩 ─────────────────────────────────────────────────────────────── -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p>處理中...</p>
+</div>
+
+<!-- ── Toast 通知 ───────────────────────────────────────────────────────────── -->
+<div id="toast" class="toast"></div>
+
+<!-- ── Modal 背景遮罩 ───────────────────────────────────────────────────────── -->
+<div id="overlay" onclick="hideModal()"></div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     VIEW: 主應用（側邊欄 + 內容區）
+     ════════════════════════════════════════════════════════════════════════════ -->
+<div id="view-dashboard" class="view">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <button class="icon-btn" onclick="toggleSidebar()" title="展開/收合選單">☰</button>
+    <div class="topbar-brand"><span>📊</span> 銷貨管理系統</div>
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <!-- 主體佈局 -->
+  <div class="app-layout" id="app-layout">
+
+    <!-- ══ 側邊欄 ══ -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="menu-tree">
+
+        <!-- 登入 -->
+        <div class="menu-auth" id="menu-auth-section">
+          <div class="menu-auth-status">
+            <span class="menu-auth-icon" id="menu-auth-icon">🔑</span>
+            <div class="menu-auth-info">
+              <span class="menu-auth-label">Google 帳號</span>
+              <span class="menu-auth-desc" id="menu-auth-desc">登入以使用相關功能</span>
+            </div>
+          </div>
+          <button class="menu-auth-btn" id="menu-auth-btn" onclick="toggleAuth()">登入</button>
+        </div>
+        <div class="menu-divider"></div>
+
+        <!-- 首頁 -->
+        <a class="menu-item menu-item-top" data-page="home" onclick="showPage('home')">🏠 首頁</a>
+
+        <!-- 銷貨 -->
+        <div class="menu-group open" id="mg-sales">
+          <div class="menu-group-hd" onclick="toggleGroup('mg-sales')">
+            <span class="mg-icon">🛒</span>
+            <span class="mg-label">銷貨</span>
+            <span class="mg-arrow">▾</span>
+          </div>
+          <div class="mg-items">
+            <a class="menu-item" data-page="sales-new"  onclick="showPage('sales-new')">銷貨開單</a>
+            <a class="menu-item" data-page="sales-list" onclick="showPage('sales-list')">銷貨查詢</a>
+          </div>
+        </div>
+
+        <!-- 查詢 -->
+        <div class="menu-group open" id="mg-query">
+          <div class="menu-group-hd" onclick="toggleGroup('mg-query')">
+            <span class="mg-icon">🔍</span>
+            <span class="mg-label">查詢</span>
+            <span class="mg-arrow">▾</span>
+          </div>
+          <div class="mg-items">
+            <a class="menu-item" data-page="query-inventory" onclick="showPage('query-inventory')">庫存查詢</a>
+            <a class="menu-item" data-page="stock-log"       onclick="showPage('stock-log')">入出庫記錄</a>
+          </div>
+        </div>
+
+        <!-- 庫存 -->
+        <div class="menu-group open" id="mg-inventory">
+          <div class="menu-group-hd" onclick="toggleGroup('mg-inventory')">
+            <span class="mg-icon">📦</span>
+            <span class="mg-label">庫存</span>
+            <span class="mg-arrow">▾</span>
+          </div>
+          <div class="mg-items">
+            <a class="menu-item" data-page="inv-in"        onclick="showPage('inv-in')">入庫作業</a>
+            <a class="menu-item" data-page="inv-out"       onclick="showPage('inv-out')">出庫作業</a>
+            <a class="menu-item" data-page="product-mgmt"  onclick="showPage('product-mgmt')">商品管理</a>
+            <a class="menu-item" data-page="customer-mgmt" onclick="showPage('customer-mgmt')">客戶管理</a>
+          </div>
+        </div>
+
+        <!-- 報表 -->
+        <div class="menu-group open" id="mg-report">
+          <div class="menu-group-hd" onclick="toggleGroup('mg-report')">
+            <span class="mg-icon">📈</span>
+            <span class="mg-label">報表</span>
+            <span class="mg-arrow">▾</span>
+          </div>
+          <div class="mg-items">
+            <a class="menu-item" data-page="customer-stats" onclick="showPage('customer-stats')">客戶銷貨統計</a>
+            <a class="menu-item" data-page="product-rank"   onclick="showPage('product-rank')">商品銷售排行</a>
+          </div>
+        </div>
+
+        <!-- 資料管理 -->
+        <div class="menu-group" id="mg-db">
+          <div class="menu-group-hd" onclick="toggleGroup('mg-db')">
+            <span class="mg-icon">⚙️</span>
+            <span class="mg-label">資料管理</span>
+            <span class="mg-arrow">▾</span>
+          </div>
+          <div class="mg-items">
+            <a class="menu-item" data-page="db-tables" onclick="showPage('db-tables')">資料表列表</a>
+          </div>
+        </div>
+
+      </nav>
+    </aside>
+
+    <!-- ══ 內容區（頁面由各模組動態注入）══ -->
+    <main class="content" id="main-content"></main>
+
+  </div><!-- /.app-layout -->
+
+  <!-- 行動版側邊欄遮罩 -->
+  <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+</div><!-- /#view-dashboard -->
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     VIEW: 資料表詳細（Google Sheets）
+     ════════════════════════════════════════════════════════════════════════════ -->
+<div id="view-table" class="view">
+
+  <div class="topbar">
+    <button class="icon-btn" onclick="backToDashboard()" title="返回">◀</button>
+    <div class="topbar-brand"><span>📊</span> 銷貨管理系統</div>
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <div class="tbl-header">
+    <div class="tbl-title-group">
+      <span id="tbl-title"></span>
+      <span id="row-count"></span>
+    </div>
+    <div class="tbl-actions">
+      <button class="btn secondary" id="btn-export" onclick="exportXls()" style="display:none">📤 匯出 XLS</button>
+      <button class="btn primary" id="btn-add-row" onclick="openAddModal()" style="display:none">＋ 新增列</button>
+    </div>
+  </div>
+
+  <div class="sheet-tabs-bar" id="sheet-tabs"></div>
+
+  <div class="tbl-body" id="tbl-container">
+    <div class="empty-state"><p>載入中...</p></div>
+  </div>
+
+</div>
+
+<!-- ── Scripts ──────────────────────────────────────────────────────────────── -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/pages/home.js"></script>
+<script src="js/pages/sales-new.js"></script>
+<script src="js/pages/sales-list.js"></script>
+<script src="js/pages/query-inventory.js"></script>
+<script src="js/pages/inv.js"></script>
+<script src="js/pages/stock-log.js"></script>
+<script src="js/pages/product-mgmt.js"></script>
+<script src="js/pages/customer-mgmt.js"></script>
+<script src="js/pages/customer-stats.js"></script>
+<script src="js/pages/product-rank.js"></script>
+<script src="js/pages/db-tables.js"></script>
+<script src="js/app.js"></script>
+<!-- Google Identity Services — 靜默載入，不觸發登入彈窗 -->
+<script src="https://accounts.google.com/gsi/client" async onload="gisLoaded()"></script>
+
+</body>
+</html>
