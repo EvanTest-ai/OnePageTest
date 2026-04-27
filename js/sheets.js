@@ -25,6 +25,51 @@ async function apiRequest(url, options = {}) {
 
 // ── Google Drive ──────────────────────────────────────────────────────────────
 
+async function getFileContent(fileId) {
+  const token = getAccessToken();
+  if (!token) throw new Error('尚未登入，請先登入');
+  const res = await fetch(`${DRIVE_BASE}/files/${fileId}?alt=media`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`下載檔案失敗 (${res.status}): ${text}`);
+  }
+  return res.text();
+}
+
+// 自動偵測編碼（支援 UTF-8 / Big5 / GBK），適用於台灣政府 CSV
+async function getFileContentAutoEncoding(fileId) {
+  const token = getAccessToken();
+  if (!token) throw new Error('尚未登入，請先登入');
+  const res = await fetch(`${DRIVE_BASE}/files/${fileId}?alt=media`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`下載檔案失敗 (${res.status}): ${text}`);
+  }
+  const buffer = await res.arrayBuffer();
+  for (const enc of ['utf-8', 'big5', 'gbk']) {
+    try {
+      const text = new TextDecoder(enc, { fatal: true }).decode(buffer);
+      // 確認解碼結果含中文（CJK 範圍）
+      if ([...text.slice(0, 100)].some(c => c.codePointAt(0) > 0x4E00)) {
+        return text;
+      }
+    } catch (_) { /* 解碼失敗，試下一個 */ }
+  }
+  return new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+}
+
+async function findFileByName(name) {
+  const q = encodeURIComponent(`name='${name}' and trashed=false`);
+  const fields = encodeURIComponent('files(id,name,mimeType)');
+  const url = `${DRIVE_BASE}/files?q=${q}&fields=${fields}&pageSize=1`;
+  const data = await apiRequest(url);
+  return data.files?.[0] || null;
+}
+
 async function listSpreadsheets() {
   const parts = [
     "mimeType='application/vnd.google-apps.spreadsheet'",
